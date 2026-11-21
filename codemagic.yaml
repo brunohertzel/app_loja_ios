@@ -1,41 +1,51 @@
+# Carnes Merces - iOS SEM assinatura Apple Developer
+# Build do .app com --no-codesign, empacotado em .ipa para sideload e assinatura local.
+# O IPA gerado AINDA NAO ESTA ASSINADO e nao instala sozinho no iPhone.
 workflows:
-  carnes-merces-ios-adhoc:
-    name: Carnes Mercês — iOS Ad Hoc (iPhone)
+  carnes-merces-ios-unsigned:
+    name: "Carnes Merces - iOS sem certificado (IPA para Sideloadly)"
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: ad_hoc
-        bundle_identifier: br.com.softsistemas.carnesmerces
       vars:
         SOFT_API_BASE_URL: "https://loja.carnesmerces.com.br/api/mobile/v1"
     scripts:
-      - name: Verificar Flutter e gerar projeto nativo iOS
+      - name: Gerar projeto iOS e preparar permissões
         script: |
-          set -e
+          set -eu
           flutter --version
           flutter create --platforms=ios --org br.com.softsistemas --project-name soft_ecommerce_mobile .
           python3 tooling/prepare_ios.py
           flutter pub get
-      - name: Testar correção do GPS/cidade
+      - name: Testar GPS e cidade
         script: |
-          set -e
+          set -eu
           flutter test test/rev5_gps_city_test.dart
-      - name: Aplicar assinatura Ad Hoc do iPhone
+      - name: Compilar iOS sem certificado
         script: |
-          set -e
-          xcode-project use-profiles
-      - name: Compilar IPA para instalação privada
-        script: |
-          set -e
-          flutter build ipa --release \
+          set -eu
+          flutter build ios --release --no-codesign \
             --build-name=1.6.40 --build-number=198 \
-            --dart-define=SOFT_API_BASE_URL="$SOFT_API_BASE_URL" \
-            --export-options-plist="$HOME/export_options.plist"
+            --dart-define=SOFT_API_BASE_URL="$SOFT_API_BASE_URL"
+      - name: Empacotar .app como IPA sem assinatura para Sideloadly
+        script: |
+          set -eu
+          test -d build/ios/iphoneos/Runner.app
+          mkdir -p build/ios/ipa
+          temp_dir="$(mktemp -d)"
+          cp -R build/ios/iphoneos/Runner.app "$temp_dir/Runner.app"
+          mkdir -p "$temp_dir/Payload"
+          mv "$temp_dir/Runner.app" "$temp_dir/Payload/Runner.app"
+          ipa_file="$CM_BUILD_DIR/build/ios/ipa/Carnes_Merces_1.6.40_198_UNSIGNED.ipa"
+          (cd "$temp_dir" && zip -q -r "$ipa_file" Payload)
+          unzip -t "$ipa_file" >/dev/null
+          test -s "$ipa_file"
+          echo "IPA SEM ASSINATURA gerado em: $ipa_file"
+          rm -rf "$temp_dir"
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/archive/*.xcarchive
+      - build/ios/iphoneos/*.app/**
       - /tmp/xcodebuild_logs/*.log
