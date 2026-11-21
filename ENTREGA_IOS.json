@@ -1,0 +1,16 @@
+{
+  "app": "Carnes Mercês",
+  "base_flutter": "1.6.40+198",
+  "target": "iOS Ad Hoc",
+  "bundle_id": "br.com.softsistemas.carnesmerces",
+  "api": "https://loja.carnesmerces.com.br/api/mobile/v1",
+  "ios_deployment_target": "15.0",
+  "ios_generated_by": "flutter create on Codemagic macOS",
+  "build_ready": "requires Apple Developer signing and Codemagic Mac validation",
+  "source": "Android REV5 GPS Cidade",
+  "languages": [
+    "pt_BR",
+    "en",
+    "es"
+  ]
+}

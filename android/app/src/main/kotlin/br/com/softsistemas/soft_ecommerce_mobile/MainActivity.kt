@@ -1,0 +1,77 @@
+package br.com.softsistemas.soft_ecommerce_mobile
+
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import android.content.pm.PackageManager
+import androidx.core.app.NotificationManagerCompat
+import io.flutter.embedding.android.FlutterFragmentActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
+
+class MainActivity : FlutterFragmentActivity() {
+    private var permissionResult: MethodChannel.Result? = null
+    private val requestCode = 11103
+    private val permissionPrefs by lazy { getSharedPreferences("soft_notification_permission", MODE_PRIVATE) }
+
+    private fun status(): String {
+        val enabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
+        if (Build.VERSION.SDK_INT < 33) return if (enabled) "granted" else "blocked"
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            return if (enabled) "granted" else "blocked"
+        }
+        val asked = permissionPrefs.getBoolean("asked", false)
+        if (!asked) return "not_determined"
+        return if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) "denied" else "blocked"
+    }
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "br.com.softsistemas.mobile/notifications")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "status" -> result.success(status())
+                    "request" -> {
+                        val current = status()
+                        if (current == "granted" || current == "blocked" || Build.VERSION.SDK_INT < 33) {
+                            result.success(current)
+                        } else if (permissionResult != null) {
+                            result.error("PERMISSION_BUSY", "Permission request is in progress", null)
+                        } else {
+                            permissionResult = result
+                            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), requestCode)
+                        }
+                    }
+                    "openSettings" -> {
+                        try {
+                            val intent = if (Build.VERSION.SDK_INT >= 26) {
+                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                            } else {
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
+                            }
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (error: Exception) { result.success(false) }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    override fun onRequestPermissionsResult(code: Int, permissions: Array<out String>, results: IntArray) {
+        super.onRequestPermissionsResult(code, permissions, results)
+        if (code == requestCode) {
+            if (results.isNotEmpty()) permissionPrefs.edit().putBoolean("asked", true).apply()
+            permissionResult?.success(status())
+            permissionResult = null
+        }
+    }
+
+    override fun onDestroy() {
+        permissionResult?.error("ACTIVITY_CLOSED", "Permission request was interrupted", null)
+        permissionResult = null
+        super.onDestroy()
+    }
+}

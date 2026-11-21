@@ -1,0 +1,40 @@
+name: soft_ecommerce_mobile
+description: Soft Ecommerce Mobile - loja Android/iOS para clientes do ecommerce.
+publish_to: 'none'
+version: 1.6.40+198
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+  flutter: '>=3.27.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  http: ^1.2.2
+  local_auth: ^2.3.0
+  local_auth_android: 1.0.56
+  local_auth_darwin: 1.6.1
+  flutter_secure_storage: ^9.2.4
+  package_info_plus: ^9.0.1
+  shared_preferences: ^2.3.2
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+  google_sign_in: ^6.3.0
+  pay: ^3.3.0
+  image_picker: ^1.1.2
+  mobile_scanner: ^6.0.11
+  url_launcher: ^6.3.1
+  flutter_widget_from_html_core: ^0.16.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/am_soft_logo.png

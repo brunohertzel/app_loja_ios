@@ -1,0 +1,15 @@
+# HOTFIX 1 – Compilação Android REV3 (1.6.38+196)
+
+Causa: `geocoding: ^3.0.0` não aceita o parâmetro nomeado `localeIdentifier` em `placemarkFromCoordinates`.
+Correção: `await setLocaleIdentifier('pt_BR');` antes da chamada, mantendo o endereço brasileiro no GPS.
+
+## Atualização rápida
+
+1. Faça backup do seu arquivo `lib/features/store/address_form.dart`.
+2. Extraia o ZIP HOTFIX na raiz `C:\app_flutter\soft_ecommerce_mobile_android\`, substituindo somente `lib/features/store/address_form.dart`.
+3. No CMD dessa mesma pasta execute `flutter pub get`.
+4. Execute `flutter analyze` e, se não houver erros impeditivos, `COMPILAR_ANDROID.cmd https://loja.carnesmerces.com.br/api/mobile/v1`.
+
+Sem alterações de API, licenciamento, versão, build ou demais arquivos.
+
+Observação: não foi possível executar Flutter SDK neste ambiente; validação por inspeção estática.

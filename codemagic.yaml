@@ -1,0 +1,41 @@
+workflows:
+  carnes-merces-ios-adhoc:
+    name: Carnes Mercês — iOS Ad Hoc (iPhone)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: br.com.softsistemas.carnesmerces
+      vars:
+        SOFT_API_BASE_URL: "https://loja.carnesmerces.com.br/api/mobile/v1"
+    scripts:
+      - name: Verificar Flutter e gerar projeto nativo iOS
+        script: |
+          set -e
+          flutter --version
+          flutter create --platforms=ios --org br.com.softsistemas --project-name soft_ecommerce_mobile .
+          python3 tooling/prepare_ios.py
+          flutter pub get
+      - name: Testar correção do GPS/cidade
+        script: |
+          set -e
+          flutter test test/rev5_gps_city_test.dart
+      - name: Aplicar assinatura Ad Hoc do iPhone
+        script: |
+          set -e
+          xcode-project use-profiles
+      - name: Compilar IPA para instalação privada
+        script: |
+          set -e
+          flutter build ipa --release \
+            --build-name=1.6.40 --build-number=198 \
+            --dart-define=SOFT_API_BASE_URL="$SOFT_API_BASE_URL" \
+            --export-options-plist="$HOME/export_options.plist"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive
+      - /tmp/xcodebuild_logs/*.log
