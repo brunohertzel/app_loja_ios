@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 IOS = ROOT / 'ios'
 BUNDLE = 'br.com.softsistemas.carnesmerces'
 NAME = 'Carnes Mercês'
-VERSION = '15.0'
+VERSION = '15.5'
 if not (IOS / 'Runner.xcodeproj/project.pbxproj').is_file():
     raise SystemExit('iOS nao existe. Rode flutter create --platforms=ios --org br.com.softsistemas --project-name soft_ecommerce_mobile .')
 project = IOS / 'Runner.xcodeproj/project.pbxproj'
@@ -49,9 +49,9 @@ podfile=IOS/'Podfile'
 if podfile.is_file():
     s=podfile.read_text(encoding='utf-8')
     # Flutter's generated Podfile may declare platform with comment.
-    s=re.sub(r"(?m)^\s*#?\s*platform\s*:ios\s*,\s*['\"][^'\"]+['\"].*$", "platform :ios, '15.0'",s)
+    s=re.sub(r"(?m)^\s*#?\s*platform\s*:ios\s*,\s*['\"][^'\"]+['\"].*$", "platform :ios, '15.5'",s)
     if not re.search(r'(?m)^platform\s*:ios',s):
-        s="platform :ios, '15.0'\n"+s
+        s="platform :ios, '15.5'\n"+s
     podfile.write_text(s,encoding='utf-8')
 
 # Ship our provisional test icon, not an invented official logo.
@@ -61,6 +61,6 @@ if not source.is_dir(): raise SystemExit('AppIcon.appiconset nao encontrado')
 if target.exists(): shutil.rmtree(target)
 shutil.copytree(source,target)
 
-# Apple will sign in Codemagic using an Ad Hoc profile for the registered iPhone.
+# Build unsigned on Codemagic; local signing is performed separately by the tester.
 print('iOS configurado:', NAME,'|',BUNDLE,'| iOS >=',VERSION)
 print('Permissions: GPS, Camera, Photos, Face ID | HTTPS required')
