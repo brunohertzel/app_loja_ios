@@ -73,19 +73,21 @@ class _SoftEcommerceAppState extends State<SoftEcommerceApp> {
       final bootstrap = AppBootstrap.fromJson(bootstrapJson);
       _bootstrap = bootstrap;
       await AppThemeModeController.instance.load(
-        localDefault: GeneratedAppConfig.themeDefault,
+        localDefault: bootstrap.app.themeDefault,
       );
 
-      // O splash/branding vem do modulo Mobile. O Android mostra um splash
-      // nativo antes do Flutter; assim que o bootstrap chega, exibimos a
-      // imagem configurada no modulo (splash -> logo -> icone Android).
+      // O splash/branding vem do modulo Mobile. iOS e Android exibem o
+      // splash nativo antes do Flutter; depois usamos a imagem atual
+      // recebida da API (splash -> logo -> icone da plataforma).
       if (mounted) setState(() {});
       final startupImage = _firstNonEmpty([
+        bootstrap.app.splashUrl ?? '',
+        bootstrap.app.logoUrl ?? '',
+        PlatformInfo.isIOS
+            ? (bootstrap.app.iconIosUrl ?? '')
+            : (bootstrap.app.iconAndroidUrl ?? ''),
         GeneratedAppConfig.splashUrl,
         GeneratedAppConfig.logoUrl,
-        PlatformInfo.isIOS
-            ? GeneratedAppConfig.iconIosUrl
-            : GeneratedAppConfig.iconAndroidUrl,
       ]);
       if (startupImage != null && startupImage.isNotEmpty && mounted) {
         try {
@@ -167,8 +169,12 @@ class _SoftEcommerceAppState extends State<SoftEcommerceApp> {
   @override
   Widget build(BuildContext context) {
     final bootstrap = _bootstrap;
-    const primary = GeneratedAppConfig.primaryColor;
-    const secondary = GeneratedAppConfig.secondaryColor;
+    // Identidade visual vem do bootstrap do cliente e atualiza ao iniciar.
+    // As constantes locais sao apenas fallback enquanto a API carrega.
+    final primary =
+        bootstrap?.app.primaryColor ?? GeneratedAppConfig.primaryColor;
+    final secondary =
+        bootstrap?.app.secondaryColor ?? GeneratedAppConfig.secondaryColor;
 
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLocaleController.instance,
@@ -176,7 +182,7 @@ class _SoftEcommerceAppState extends State<SoftEcommerceApp> {
         valueListenable: AppThemeModeController.instance,
         builder: (context, themeMode, _) => MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: GeneratedAppConfig.appName,
+          title: bootstrap?.app.name ?? GeneratedAppConfig.appName,
           theme: AppTheme.lightFromHex(primary, secondary),
           darkTheme: AppTheme.darkFromHex(primary, secondary),
           themeMode: themeMode,
@@ -254,12 +260,15 @@ class _LoadingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brand = bootstrap?.app;
     final imageUrl = _firstNonEmpty([
+      brand?.splashUrl ?? '',
+      brand?.logoUrl ?? '',
+      PlatformInfo.isIOS
+          ? (brand?.iconIosUrl ?? '')
+          : (brand?.iconAndroidUrl ?? ''),
       GeneratedAppConfig.splashUrl,
       GeneratedAppConfig.logoUrl,
-      PlatformInfo.isIOS
-          ? GeneratedAppConfig.iconIosUrl
-          : GeneratedAppConfig.iconAndroidUrl,
     ]);
 
     return Scaffold(
@@ -278,10 +287,16 @@ class _LoadingPage extends StatelessWidget {
                       child: SoftCachedImage.network(
                         imageUrl,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/brand/splash.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     )
-                  : const SizedBox.shrink(),
+                  : Image.asset(
+                      'assets/brand/splash.png',
+                      fit: BoxFit.contain,
+                    ),
             ),
             const Positioned(
               left: 0,

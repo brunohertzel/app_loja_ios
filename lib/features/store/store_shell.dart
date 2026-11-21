@@ -1073,24 +1073,17 @@ class _StoreHomePageState extends State<StoreHomePage> {
         title: Row(
           children: [
             BrandLogo(
-              logoUrl: GeneratedAppConfig.logoUrl.trim().isNotEmpty
-                  ? GeneratedAppConfig.logoUrl.trim()
-                  : ((PlatformInfo.isIOS
-                              ? GeneratedAppConfig.iconIosUrl
-                              : GeneratedAppConfig.iconAndroidUrl)
-                          .trim()
-                          .isNotEmpty
-                      ? (PlatformInfo.isIOS
-                              ? GeneratedAppConfig.iconIosUrl
-                              : GeneratedAppConfig.iconAndroidUrl)
-                          .trim()
-                      : null),
+              logoUrl: (widget.bootstrap.app.logoUrl?.trim().isNotEmpty ?? false)
+                  ? widget.bootstrap.app.logoUrl
+                  : (PlatformInfo.isIOS
+                      ? widget.bootstrap.app.iconIosUrl
+                      : widget.bootstrap.app.iconAndroidUrl),
               size: 30,
             ),
             const SizedBox(width: 10),
             Expanded(
               child: LText(
-                GeneratedAppConfig.appName,
+                widget.bootstrap.app.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w900),

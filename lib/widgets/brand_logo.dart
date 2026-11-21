@@ -10,13 +10,20 @@ class BrandLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = logoUrl?.trim() ?? '';
-    if (url.isEmpty) {
-      return Icon(
-        Icons.shopping_bag_outlined,
-        size: size,
-        color: Theme.of(context).colorScheme.primary,
-      );
-    }
+    Widget localLogo() => SizedBox(
+          width: size * 2.2,
+          height: size,
+          child: Image.asset(
+            'assets/brand/logo.png',
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Icon(
+              Icons.shopping_bag_outlined,
+              size: size,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        );
+    if (url.isEmpty) return localLogo();
 
     return SizedBox(
       width: size * 2.2,
@@ -24,11 +31,7 @@ class BrandLogo extends StatelessWidget {
       child: SoftCachedImage.network(
         url,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Icon(
-          Icons.shopping_bag_outlined,
-          size: size,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        errorBuilder: (_, __, ___) => localLogo(),
       ),
     );
   }

@@ -5,6 +5,8 @@ Usage: python3 tooling/prepare_ios.py
 """
 from pathlib import Path
 import plistlib
+import json
+import subprocess
 import re
 import shutil
 import sys
@@ -54,12 +56,60 @@ if podfile.is_file():
         s="platform :ios, '15.5'\n"+s
     podfile.write_text(s,encoding='utf-8')
 
-# Ship our provisional test icon, not an invented official logo.
+# Branding nativo: iOS nao pode consultar a API antes de iniciar o Flutter.
+# As imagens foram baixadas do cadastro Mobile durante o build Codemagic.
+branding=ROOT/'tooling/ios_branding_downloads'
+meta=branding/'branding_snapshot.json'
+if not meta.is_file():
+    raise SystemExit('Branding nao sincronizado. Execute python3 tooling/sync_ios_branding.py ANTES de prepare_ios.py')
+brand=json.loads(meta.read_text(encoding='utf-8'))
+for required in ('icon_ios.png','splash.png','logo.png'):
+    if not (branding/required).is_file():
+        raise SystemExit('Imagem de marca ausente: '+required)
+
 source=ROOT/'tooling/ios_branding/AppIcon.appiconset'
 target=IOS/'Runner/Assets.xcassets/AppIcon.appiconset'
-if not source.is_dir(): raise SystemExit('AppIcon.appiconset nao encontrado')
+if not source.is_dir(): raise SystemExit('Modelo AppIcon.appiconset nao encontrado')
 if target.exists(): shutil.rmtree(target)
 shutil.copytree(source,target)
+# 'sips' e ferramenta nativa do macOS; nao exige biblioteca Python externa.
+contents=json.loads((target/'Contents.json').read_text(encoding='utf-8'))
+for spec in contents.get('images',[]):
+    if not spec.get('filename'): continue
+    point_size=float(spec['size'].split('x')[0])
+    scale=int(spec.get('scale','1x').removesuffix('x'))
+    px=round(point_size*scale)
+    subprocess.run(['sips','-s','format','png','-z',str(px),str(px),
+                    str(branding/'icon_ios.png'),'--out',str(target/spec['filename'])],
+                   check=True,stdout=subprocess.DEVNULL)
+
+# Flutter default LaunchScreen usa LaunchImage como imagem nativa.
+launch_set=IOS/'Runner/Assets.xcassets/LaunchImage.imageset'
+launch_set.mkdir(parents=True,exist_ok=True)
+launch_images=[]
+for scale in (1,2,3):
+    filename='LaunchImage'+('' if scale==1 else '@'+str(scale)+'x')+'.png'
+    subprocess.run(['sips','-s','format','png','-Z',str(240*scale),
+                    str(branding/'splash.png'),'--out',str(launch_set/filename)],
+                   check=True,stdout=subprocess.DEVNULL)
+    launch_images.append({'idiom':'universal','filename':filename,'scale':str(scale)+'x'})
+(launch_set/'Contents.json').write_text(json.dumps({'images':launch_images,
+         'info':{'author':'xcode','version':1}},indent=2)+'\n',encoding='utf-8')
+
+# Fundo da tela nativa acompanha a cor principal da loja.
+launch_storyboard=IOS/'Runner/Base.lproj/LaunchScreen.storyboard'
+if not launch_storyboard.exists():
+    raise SystemExit('LaunchScreen.storyboard nao encontrado')
+launch=launch_storyboard.read_text(encoding='utf-8')
+hex_color=brand['primary_color'].strip().lstrip('#')
+rgb=[int(hex_color[i:i+2],16)/255 for i in (0,2,4)]
+color_tag='<color key="backgroundColor" red="%.6f" green="%.6f" blue="%.6f" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>'%tuple(rgb)
+launch,n=re.subn(r'<color\s+key="backgroundColor"[^>]*/>',lambda _:color_tag,launch,count=1)
+if n!=1:raise SystemExit('Cor do LaunchScreen nao localizada; formato Flutter alterado')
+# Preserva a proporcao da arte no splash em vez de cortar ou esticar.
+launch=launch.replace('contentMode="center"','contentMode="scaleAspectFit"')
+launch_storyboard.write_text(launch,encoding='utf-8')
+print('Branding nativo iOS aplicado: icone oficial, LaunchScreen e fundo '+brand['primary_color'])
 
 # Build unsigned on Codemagic; local signing is performed separately by the tester.
 print('iOS configurado:', NAME,'|',BUNDLE,'| iOS >=',VERSION)

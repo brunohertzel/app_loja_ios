@@ -308,9 +308,11 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final logo = GeneratedAppConfig.logoUrl.trim().isEmpty
-        ? null
-        : GeneratedAppConfig.logoUrl.trim();
+    final branding = widget.bootstrap.app;
+    final logo = (branding.logoUrl?.trim().isNotEmpty ?? false)
+        ? branding.logoUrl
+        : ((PlatformInfo.isIOS ? branding.iconIosUrl : branding.iconAndroidUrl)
+            ?? GeneratedAppConfig.logoUrl);
 
     return Scaffold(
       body: SafeArea(
@@ -328,7 +330,7 @@ class _LoginPageState extends State<LoginPage> {
                       Center(child: BrandLogo(logoUrl: logo)),
                       const SizedBox(height: 14),
                       LText(
-                        GeneratedAppConfig.appName,
+                        branding.name,
                         textAlign: TextAlign.center,
                         style: Theme.of(context)
                             .textTheme
