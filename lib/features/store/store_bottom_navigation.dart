@@ -26,10 +26,20 @@ class StoreBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use a largura real recebida pela barra, e nao o MediaQuery global.
+    // O tamanho disponivel pode ser menor que o do aparelho (e nos testes
+    // setSurfaceSize pode mudar as constraints sem alterar MediaQuery.size).
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          _buildForWidth(context, constraints.maxWidth),
+    );
+  }
+
+  Widget _buildForWidth(BuildContext context, double availableWidth) {
     final scheme = Theme.of(context).colorScheme;
     final language = Localizations.localeOf(context).languageCode;
     final textScale = MediaQuery.textScalerOf(context).scale(12);
-    final compact = MediaQuery.sizeOf(context).width < 430 || textScale > 15;
+    final compact = availableWidth < 430 || textScale > 15;
 
     final entries = <_StoreNavEntry>[
       const _StoreNavEntry(
