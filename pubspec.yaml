@@ -1,7 +1,7 @@
 name: soft_ecommerce_mobile
 description: Soft Ecommerce Mobile - loja Android/iOS para clientes do ecommerce.
 publish_to: 'none'
-version: 1.6.40+199
+version: 1.6.40+200
 
 environment:
   sdk: '>=3.6.0 <4.0.0'

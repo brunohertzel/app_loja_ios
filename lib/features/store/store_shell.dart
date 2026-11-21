@@ -28,6 +28,7 @@ import 'about_app_page.dart';
 import 'local_security_page.dart';
 import 'barcode_scanner_page.dart';
 import 'checkout_page.dart';
+import 'store_bottom_navigation.dart';
 import 'product_detail_page.dart';
 import 'store_models.dart';
 import 'store_repository.dart';
@@ -314,8 +315,11 @@ class _StoreShellState extends State<StoreShell> {
               ),
           ],
         ),
-        bottomNavigationBar: NavigationBar(
+        bottomNavigationBar: StoreBottomNavigation(
           selectedIndex: _index,
+          cartCount: _cart.itemCount,
+          accountIcon: _accountNavigationIcon(Icons.person_outline),
+          selectedAccountIcon: _accountNavigationIcon(Icons.person),
           onDestinationSelected: (value) {
             if (value == 3) {
               unawaited(_openFavoritesTab());
@@ -334,46 +338,6 @@ class _StoreShellState extends State<StoreShell> {
               _accountKey.currentState?.refreshSession();
             }
           },
-          destinations: [
-            const LNavigationDestination(
-              icon: Icon(Icons.local_offer_outlined),
-              selectedIcon: Icon(Icons.local_offer),
-              label: 'Ofertas',
-            ),
-            const LNavigationDestination(
-              icon: Icon(Icons.grid_view_outlined),
-              selectedIcon: Icon(Icons.grid_view_rounded),
-              label: 'Categorias',
-            ),
-            const LNavigationDestination(
-              icon: Icon(Icons.storefront_outlined, size: 30),
-              selectedIcon: Icon(Icons.storefront_rounded, size: 36),
-              label: 'Loja',
-            ),
-            const LNavigationDestination(
-              icon: Icon(Icons.favorite_border),
-              selectedIcon: Icon(Icons.favorite),
-              label: 'Favoritos',
-            ),
-            LNavigationDestination(
-              icon: Badge(
-                isLabelVisible: _cart.itemCount > 0,
-                label: LText('${_cart.itemCount}'),
-                child: const Icon(Icons.shopping_cart_outlined),
-              ),
-              selectedIcon: Badge(
-                isLabelVisible: _cart.itemCount > 0,
-                label: LText('${_cart.itemCount}'),
-                child: const Icon(Icons.shopping_cart),
-              ),
-              label: 'Carrinho',
-            ),
-            LNavigationDestination(
-              icon: _accountNavigationIcon(Icons.person_outline),
-              selectedIcon: _accountNavigationIcon(Icons.person),
-              label: 'Conta',
-            ),
-          ],
         ),
       ),
     );
