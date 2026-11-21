@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soft_ecommerce_mobile/features/store/store_bottom_navigation.dart';
 
@@ -11,6 +12,13 @@ Widget _testApp({
   return MaterialApp(
     locale: locale,
     supportedLocales: const [Locale('pt', 'BR'), Locale('en'), Locale('es')],
+    // Mesmos delegates do app real. Sem eles, flutter_test emite um warning
+    // para pt_BR e os testes falham mesmo sem nenhum overflow na barra.
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
     home: Scaffold(
       body: const Center(child: Text('Home')),
       bottomNavigationBar: StoreBottomNavigation(
@@ -67,9 +75,11 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(320, 667));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(_testApp(locale: const Locale('en')));
+    await tester.pumpAndSettle();
     expect(find.text('Cats.'), findsOneWidget);
     expect(find.text('Cart'), findsOneWidget);
     await tester.pumpWidget(_testApp(locale: const Locale('es')));
+    await tester.pumpAndSettle();
     expect(find.text('Cat.'), findsOneWidget);
     expect(find.text('Carrito'), findsOneWidget);
     expect(find.text('Tienda'), findsOneWidget);
@@ -81,6 +91,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(375, 667));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(_testApp(cartCount: 12));
+    await tester.pumpAndSettle();
     expect(find.text('12'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
