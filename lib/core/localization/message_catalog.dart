@@ -1,6 +1,9 @@
 // App-owned interface messages. Server catalog and legal documents stay verbatim.
 class MessageCatalog {
   static const Map<String, List<String>> messages = {
+    // REV9 - embalagem de presente no checkout.
+    'Embalagem para presente': ['Gift wrapping', 'Envoltura de regalo'],
+    'Sem embalagem para presente': ['No gift wrapping', 'Sin envoltura de regalo'],
     // REV5 - GPS: cidade pode vir do CEP ou exigir correção manual.
     'A localização não identificou a cidade. Informe a cidade e confira o endereço antes de salvar.': [
       'Your location did not identify the city. Enter the city and check the address before saving.',
@@ -824,6 +827,9 @@ class MessageCatalog {
       "Delete account and data",
       "Eliminar cuenta y datos"
     ],
+    "Compartilhar eventos de uso para anúncios": ["Share usage events for advertising", "Compartir eventos de uso para anuncios"],
+    "Opcional. Permite medir visualizações, pesquisas e carrinho. Você pode desligar quando quiser.": ["Optional. Measures product views, searches and cart activity. You can turn it off anytime.", "Opcional. Permite medir vistas, búsquedas y actividad del carrito. Puedes desactivarlo cuando quieras."],
+    "Não foi possível salvar a preferência.": ["Unable to save your preference.", "No se pudo guardar tu preferencia."],
     "Revogação de consentimento": [
       "Withdraw consent",
       "Revocar consentimiento"

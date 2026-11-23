@@ -29,7 +29,7 @@ workflows:
         script: |
           set -eu
           flutter build ios --release --no-codesign \
-            --build-name=1.6.40 --build-number=200 \
+            --build-name=1.6.42 --build-number=202 \
             --dart-define=SOFT_API_BASE_URL="$SOFT_API_BASE_URL"
       - name: Empacotar .app como IPA sem assinatura para Sideloadly
         script: |
@@ -40,7 +40,7 @@ workflows:
           cp -R build/ios/iphoneos/Runner.app "$temp_dir/Runner.app"
           mkdir -p "$temp_dir/Payload"
           mv "$temp_dir/Runner.app" "$temp_dir/Payload/Runner.app"
-          ipa_file="$CM_BUILD_DIR/build/ios/ipa/Carnes_Merces_1.6.40_200_UNSIGNED.ipa"
+          ipa_file="$CM_BUILD_DIR/build/ios/ipa/Carnes_Merces_1.6.42_202_UNSIGNED.ipa"
           (cd "$temp_dir" && zip -q -r "$ipa_file" Payload)
           unzip -t "$ipa_file" >/dev/null
           test -s "$ipa_file"

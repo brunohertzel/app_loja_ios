@@ -165,4 +165,3 @@ Para o ambiente de teste desta entrega, a API já está localmente definida como
 Não é necessário usar `--dart-define=SOFT_API_BASE_URL=...`.
 
 O bootstrap permanece para regras que realmente são de servidor: licença da plataforma, atualização mínima, meios de pagamento efetivamente disponíveis, produtos, ofertas, favoritos, estoque, campanhas, checkout e demais regras comerciais.
-# app_loja_ecommerce

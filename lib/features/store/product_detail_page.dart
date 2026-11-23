@@ -1,6 +1,7 @@
 import '../../core/media/soft_image_cache.dart';
 import '../../core/localization/locale_controller.dart';
 import '../../core/localization/localized_widgets.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
@@ -339,6 +340,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         observation: _observationController.text.trim(),
         observationSummary: _observationSummary(),
       );
+    }
+    if (editing == null) {
+      unawaited(widget.repository.trackMarketingEvent('cart_item_added',
+          payload: {
+            'product_id': int.tryParse(_product.id) ?? 0,
+            'quantity': _quantityReal,
+          }));
     }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: LText(editing == null

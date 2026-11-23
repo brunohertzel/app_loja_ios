@@ -1,4 +1,6 @@
 import '../../core/network/api_client.dart';
+import '../../core/analytics/mobile_meta_events.dart';
+import 'dart:async';
 import '../auth/auth_repository.dart';
 import 'store_models.dart';
 
@@ -20,6 +22,11 @@ class StoreRepository {
   StoreRepository(this.api, {this.auth});
   final ApiClient api;
   final AuthRepository? auth;
+
+  Future<void> trackMarketingEvent(String event, {
+    Map<String, dynamic> payload = const <String, dynamic>{},
+  }) => MobileMetaEvents.track(api, event, payload: payload);
+
 
   Future<Map<String, dynamic>> careGet(String path) =>
       _authenticated(() => api.get(path));
@@ -93,6 +100,11 @@ class StoreRepository {
     };
     final qs = Uri(queryParameters: params).query;
     final json = await _authenticated(() => api.get('/store/products.php?$qs'));
+    if (safePage == 1 && query != null && query.trim().isNotEmpty) {
+      unawaited(trackMarketingEvent('search_performed',
+          payload: {'search_string': query.trim()}));
+    }
+
     final data = json['products'] ?? json['produtos'] ?? json['data'];
     final products = data is! List
         ? const <StoreProduct>[]
@@ -132,12 +144,14 @@ class StoreRepository {
 
   Future<Map<String, dynamic>> checkoutPrepare(
     List<Map<String, dynamic>> items, {
+    int giftWrapId = 0,
     String? addressId,
     String receiptType = 'ENTREGA',
   }) =>
       _authenticated(
         () => api.post('/checkout/prepare.php', <String, dynamic>{
           'items': items,
+          'embalagem_presente_id': giftWrapId,
           'receipt_type': receiptType,
           if (addressId != null) 'address_id': addressId,
         }),
@@ -145,12 +159,14 @@ class StoreRepository {
 
   Future<Map<String, dynamic>> checkoutFreight(
     List<Map<String, dynamic>> items, {
+    int giftWrapId = 0,
     required String addressId,
     required String receiptType,
   }) =>
       _authenticated(
         () => api.post('/checkout/freight.php', <String, dynamic>{
           'items': items,
+          'embalagem_presente_id': giftWrapId,
           'address_id': addressId,
           'receipt_type': receiptType,
         }),
@@ -158,6 +174,7 @@ class StoreRepository {
 
   Future<Map<String, dynamic>> checkoutCoupon(
     List<Map<String, dynamic>> items, {
+    int giftWrapId = 0,
     required String code,
     required String addressId,
     required String receiptType,
@@ -165,6 +182,7 @@ class StoreRepository {
       _authenticated(
         () => api.post('/checkout/coupon.php', <String, dynamic>{
           'items': items,
+          'embalagem_presente_id': giftWrapId,
           'code': code,
           'address_id': addressId,
           'receipt_type': receiptType,
@@ -173,6 +191,7 @@ class StoreRepository {
 
   Future<Map<String, dynamic>> checkoutSubmit(
     List<Map<String, dynamic>> items, {
+    int giftWrapId = 0,
     required String addressId,
     required String receiptType,
     required String scheduleDate,
@@ -192,6 +211,7 @@ class StoreRepository {
       _authenticated(
         () => api.post('/checkout/submit.php', <String, dynamic>{
           'items': items,
+          'embalagem_presente_id': giftWrapId,
           'address_id': addressId,
           'receipt_type': receiptType,
           'schedule_date': scheduleDate,
@@ -410,9 +430,12 @@ class StoreRepository {
         code: 'PRODUCT_NOT_FOUND',
       );
     }
-    return StoreProduct.fromJson(
+    final product = StoreProduct.fromJson(
       data.map((key, value) => MapEntry(key.toString(), value)),
     );
+    unawaited(trackMarketingEvent('product_viewed',
+        payload: {'product_id': int.tryParse(product.id) ?? 0}));
+    return product;
   }
 }
 

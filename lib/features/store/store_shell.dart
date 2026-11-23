@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/generated_app_config.dart';
 import '../../core/models/bootstrap_config.dart';
 import '../../core/network/api_client.dart';
+import '../../core/analytics/mobile_meta_events.dart';
 import '../../core/storage/secure_session_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_mode_controller.dart';
@@ -76,6 +77,8 @@ class _StoreShellState extends State<StoreShell> {
   void initState() {
     super.initState();
     _index = 2;
+    MobileMetaEvents.configure(mobileAds: widget.bootstrap.features.ads,
+        attribution: widget.bootstrap.features.adsAttribution);
     _repository = StoreRepository(widget.api, auth: widget.auth);
     _cart = CartController();
     _cart.addListener(_onCartChanged);
@@ -1995,6 +1998,7 @@ class _AccountPageState extends State<AccountPage> {
   String? _name;
   String? _photoUrl;
   bool _photoChanging = false;
+  bool _marketingConsent = false;
   final ImagePicker _imagePicker = ImagePicker();
   late final Future<Map<String,dynamic>> _socialContact;
 
@@ -2003,6 +2007,22 @@ class _AccountPageState extends State<AccountPage> {
     super.initState();
     _socialContact = widget.repository.careGet('/account/contact.php');
     _refresh();
+    _loadMarketingConsent();
+  }
+
+  Future<void> _loadMarketingConsent() async {
+    final consent = await MobileMetaEvents.hasConsent();
+    if (mounted) setState(() => _marketingConsent = consent);
+  }
+
+  Future<void> _setMarketingConsent(bool value) async {
+    try {
+      await MobileMetaEvents.setConsent(value);
+      if (mounted) setState(() => _marketingConsent = value);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: LText('Não foi possível salvar a preferência.')));
+    }
   }
 
   Future<void> _refresh() => refreshSession();
@@ -2172,6 +2192,8 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   Future<void> _logout() async {
+    // Opt-in e por usuario: nunca reaproveitar a permissao de outra conta.
+    await MobileMetaEvents.setConsent(false);
     await widget.auth.logout();
     if (mounted) widget.onLoggedOut();
   }
@@ -2292,6 +2314,14 @@ class _AccountPageState extends State<AccountPage> {
               return StoreSocialLinks(links:contact['social_links'],title:'Siga a loja');
             },
           ),
+          if (_logged && widget.bootstrap.features.ads && widget.bootstrap.features.adsAttribution)
+            Card(child: SwitchListTile(
+              secondary: const Icon(Icons.campaign_outlined),
+              value: _marketingConsent,
+              onChanged: _setMarketingConsent,
+              title: const LText('Compartilhar eventos de uso para anúncios'),
+              subtitle: const LText('Opcional. Permite medir visualizações, pesquisas e carrinho. Você pode desligar quando quiser.'),
+            )),
           _menu(
               Icons.settings_outlined,
               'Configurações Locais e Segurança',

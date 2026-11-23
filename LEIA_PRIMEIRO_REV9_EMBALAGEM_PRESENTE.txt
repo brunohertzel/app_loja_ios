@@ -1,0 +1,9 @@
+REV9 — IOS — Carnes Merces
+Versão 1.6.42 / build 202
+
+Mobile/API 1.14.9 é OBRIGATÓRIO antes de testar embalagem de presente.
+Selecionar embalagem no checkout deve somar uma única unidade do produto vinculado,
+com preço definido no Ecommerce (tabela do cliente); não dá desconto de cupom na embalagem.
+Sem opção cadastrada, a seção não aparece. Sem seleção, total inalterado.
+Preserva Meta Ads REV8, GPS e configuração de vitrine.
+Teste no seu ambiente: com/sem embalagem, cupom, retirada/delivery, PIX/cartão e ERP.

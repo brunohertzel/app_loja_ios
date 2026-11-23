@@ -2,6 +2,7 @@ import '../../core/localization/localized_widgets.dart';
 import '../../core/localization/locale_controller.dart';
 import '../../core/config/platform_info.dart';
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +50,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Map<String, dynamic> _data = <String, dynamic>{};
   String _receiptType = 'ENTREGA';
   String _addressId = 'principal';
+  int _giftWrapId = 0;
   String? _paymentId;
   String? _paymentTerm;
   bool _needsChange = false;
@@ -63,6 +65,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     _idempotencyKey =
         '${PlatformInfo.isIOS ? 'ios' : 'android'}-${DateTime.now().microsecondsSinceEpoch}';
     _prepare();
+    unawaited(widget.repository.trackMarketingEvent('checkout_started',
+      payload: {
+        'value': widget.cart.selectedTotal,
+        'num_items': widget.cart.selectedItemCount,
+      }));
   }
 
   @override
@@ -87,10 +94,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final json = await widget.repository.checkoutPrepare(
         widget.cart.checkoutPayload(),
+        giftWrapId: _giftWrapId,
         addressId: _addressId,
         receiptType: _receiptType,
       );
       _data = mapValue(json['data']);
+      _giftWrapId = numberValue(mapValue(_data['gift_wrap'])['selected_id']).toInt();
       _receiptType = stringValue(
         mapValue(_data['receipt'])['selected'],
         fallback: 'ENTREGA',
@@ -155,6 +164,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final json = await widget.repository.checkoutFreight(
         widget.cart.checkoutPayload(),
+        giftWrapId: _giftWrapId,
         addressId: _addressId,
         receiptType: _receiptType,
       );
@@ -208,6 +218,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final json = await widget.repository.checkoutCoupon(
         widget.cart.checkoutPayload(),
+        giftWrapId: _giftWrapId,
         code: code,
         addressId: _addressId,
         receiptType: _receiptType,
@@ -461,6 +472,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
       final json = await widget.repository.checkoutSubmit(
         widget.cart.checkoutPayload(),
+        giftWrapId: _giftWrapId,
         addressId: _addressId,
         receiptType: _receiptType,
         scheduleDate: _dateSql(_date!),
@@ -777,6 +789,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final quote = mapValue(_data['quote']);
     final capabilities = mapValue(_data['capabilities']);
     final coupon = mapValue(_data['coupon']);
+    final giftWrap = mapValue(_data['gift_wrap']);
+    final giftOptions = listValue(giftWrap['options']);
     final freightOk = boolValue(
       freight['ok'],
       fallback: _receiptType == 'RETIRADA',
@@ -1044,6 +1058,52 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ],
           const SizedBox(height: 10),
+          if (giftOptions.isNotEmpty) ...[
+            _CheckoutCard(
+              title: 'Embalagem para presente',
+              icon: Icons.card_giftcard_outlined,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  RadioListTile<int>(
+                    value: 0,
+                    groupValue: _giftWrapId,
+                    onChanged: _submitting ? null : (id) {
+                      if (id == null || id == _giftWrapId) return;
+                      setState(() => _giftWrapId = id);
+                      _prepare();
+                    },
+                    title: const LText('Sem embalagem para presente'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  ...giftOptions.map((option) {
+                    final id = numberValue(option['id']).toInt();
+                    final name = stringValue(option['name']);
+                    final price = numberValue(option['price']);
+                    final photo = nullableString(option['image_url']);
+                    return RadioListTile<int>(
+                      value: id,
+                      groupValue: _giftWrapId,
+                      onChanged: _submitting ? null : (choice) {
+                        if (choice == null || choice == _giftWrapId) return;
+                        setState(() => _giftWrapId = choice);
+                        _prepare();
+                      },
+                      contentPadding: EdgeInsets.zero,
+                      secondary: photo == null ? const Icon(Icons.card_giftcard_outlined)
+                        : ClipRRect(borderRadius: BorderRadius.circular(8),
+                            child: Image.network(photo,width: 48,height: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.card_giftcard_outlined))),
+                      title: Text(name,maxLines: 2,overflow: TextOverflow.ellipsis),
+                      subtitle: LText(price <= 0 ? 'Grátis' : '+ ${_money(price)}'),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           _CheckoutCard(
             title: 'Resumo do pedido',
             icon: Icons.receipt_long_outlined,
@@ -1053,6 +1113,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   'Produtos (${widget.cart.selectedItemCount})',
                   numberValue(summary['subtotal']),
                 ),
+                if (_giftWrapId > 0)
+                  _SummaryRow('Embalagem para presente',
+                    numberValue(summary['gift_wrap'])),
                 _SummaryRow(
                   'Frete',
                   numberValue(summary['freight']),
